@@ -12,10 +12,16 @@ def sql_connection():
 def main():
     db = sql_connection()
     cursor = db.cursor()
-    with open('test.sql', 'r') as sql_file:
+    with open('test.sql', 'r', encoding='utf-8') as sql_file:
         sql_script = sql_file.read()
     cursor.executescript(sql_script)
     db.commit()
+    cursor.execute("SELECT * FROM regions;")
+    regions = cursor.fetchall()
+    print(f'регионы: {regions}')
+    cursor.execute("SELECT * FROM cities;")
+    cities = cursor.fetchall()
+    print(f'города в регионах: {cities}')
     db.close()
 
 
