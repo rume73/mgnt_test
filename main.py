@@ -1,6 +1,10 @@
 import sqlite3
 import pandas as pd
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+
 
 def sql_connection():
     try:
@@ -8,6 +12,7 @@ def sql_connection():
         return db
     except sqlite3.Error:
         print(sqlite3.Error)
+    return None
 
 
 def main():
@@ -15,14 +20,20 @@ def main():
     cursor = db.cursor()
     with open('test.sql', 'r', encoding='utf-8') as sql_file:
         sql_script = sql_file.read()
-    cursor.executescript(sql_script)
+    try:
+        cursor.executescript(sql_script)
+        print('sql_script успешно загружен')
+    except sqlite3.Error as err:
+        print(f'Произошла ошибка при загрузке sql_script: {err}')
+        db.close()
+        return False
     db.commit()
     cursor.execute('SELECT * FROM regions;')
     regions = cursor.fetchall()
-    print(f'регионы: {regions}')
+    print(f'Регионы: {regions}')
     cursor.execute('SELECT * FROM cities;')
     cities = cursor.fetchall()
-    print(f'города в регионах: {cities}')
+    print(f'Города в регионах: {cities}')
     db.close()
 
 
@@ -34,7 +45,7 @@ def import_from_excel():
     cursor = db.cursor()
     cursor.execute('SELECT * FROM users;')
     users = cursor.fetchall()
-    print(f'пользователи: {users}')
+    print(f'Загруженные пользователи из .xlsx: {users}')
     db.close()
 
 
@@ -61,7 +72,38 @@ def export_to_excel():
     db.close()
 
 
+def parse_pdf_resume():
+    pass
+
+
+def create_pdf_resume():
+    db = sql_connection()
+    cursor = db.cursor()
+    cursor.execute('SELECT * FROM users;')
+    users = cursor.fetchall()
+    pdfmetrics.registerFont(TTFont('FiraSans', 'fonts/FiraSans.ttf', 'UTF-8'))
+    page = canvas.Canvas('data/res.pdf')
+    page.setFont('FiraSans', size=16)
+    height = 750
+    width = 200
+    page.drawString(width, 800, 'Резюме')
+    for value in users:
+        page.drawString(
+            50,
+            height,
+            (f'Имя = {value[2]}, '
+             f'Фамилия = {value[2]},')
+        )
+        height -= 25
+    height -= 50
+    page.drawString(width, height, f"Успех")
+    page.showPage()
+    page.save()
+
+
 if __name__ == '__main__':
     main()
     import_from_excel()
     export_to_excel()
+    parse_pdf_resume()
+    create_pdf_resume()
