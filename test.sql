@@ -1,57 +1,42 @@
 CREATE TABLE IF NOT EXISTS users (
  id INTEGER PRIMARY KEY,
- second_name TEXT NOT NULL,
- first_name TEXT NOT NULL,
- patronymic TEXT NOT NULL,
- region_id INTEGER,
- city_id INTEGER,
- phone INTEGER,
- email TEXT NOT NULL
+ second_name varchar(20) NOT NULL,
+ first_name varchar(20) NOT NULL,
+ patronymic varchar(20) NOT NULL,
+ region_id INTEGER NOT NULL,
+ city_id INTEGER NOT NULL,
+ phone VARCHAR(20) NOT NULL UNIQUE,
+ email VARCHAR(320) NOT NULL UNIQUE,
+ FOREIGN KEY(region_id) REFERENCES cities(region_id),
+ FOREIGN KEY(city_id) REFERENCES cities(id)
 );
 
 CREATE TABLE IF NOT EXISTS regions (
  id INTEGER PRIMARY KEY,
- region_name TEXT NOT NULL
+ region_name varchar(50) NOT NULL
 );
 
 INSERT OR IGNORE INTO regions (id, region_name)
-VALUES (0, 'Краснодарский край');
-
-INSERT OR IGNORE INTO regions (id, region_name)
-VALUES (1, 'Ростовская область');
-
-INSERT OR IGNORE INTO regions (id, region_name)
-VALUES (2, 'Ставропольский край');
+VALUES 
+ (0, 'Краснодарский край'),
+ (1, 'Ростовская область'),
+ (2, 'Ставропольский край');
 
 CREATE TABLE IF NOT EXISTS cities (
  id INTEGER PRIMARY KEY,
- region_id INTEGER,
- city_name TEXT NOT NULL
+ region_id INTEGER NOT NULL,
+ city_name varchar(30) NOT NULL,
+ FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
 INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (0, 0, 'Краснодар');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (1, 0, 'Кропоткин');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (2, 0, 'Славянск');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (3, 1, 'Ростов');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (4, 1, 'Шахты');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (5, 1, 'Батайск');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (6, 2, 'Ставрополь');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (7, 2, 'Пятигорск');
-
-INSERT OR IGNORE INTO cities (id, region_id, city_name)
-VALUES (8, 2, 'Кисловодск');
+VALUES 
+ (0, 0, 'Краснодар'),
+ (1, 0, 'Кропоткин'),
+ (2, 0, 'Славянск'),
+ (3, 1, 'Ростов'),
+ (4, 1, 'Шахты'),
+ (5, 1, 'Батайск'),
+ (6, 2, 'Ставрополь'),
+ (7, 2, 'Пятигорск'),
+ (8, 2, 'Кисловодск');
