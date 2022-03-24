@@ -38,7 +38,7 @@ def main():
         export_to_excel
         parse_pdf_resume
         create_pdf_resume
-        exit для выхода из программы:\n""")
+        exit:\n""")
         if operation == 'import_from_excel':
             import_from_excel()
         elif operation == 'export_to_excel':
