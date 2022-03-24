@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS regions (
  id INTEGER PRIMARY KEY,
- region_name varchar(50) NOT NULL
+ region_name varchar(50) NOT NULL UNIQUE
 );
 
 INSERT OR IGNORE INTO regions (id, region_name)
@@ -25,7 +25,7 @@ VALUES
 CREATE TABLE IF NOT EXISTS cities (
  id INTEGER PRIMARY KEY,
  region_id INTEGER NOT NULL,
- city_name varchar(30) NOT NULL,
+ city_name varchar(30) NOT NULL UNIQUE,
  FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
