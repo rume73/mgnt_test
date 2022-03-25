@@ -1,8 +1,8 @@
-import fitz
-import pandas as pd
 import sqlite3
 import sys
 
+import fitz
+import pandas as pd
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -17,7 +17,7 @@ def sql_connection():
     return None
 
 
-def main():
+def load_sql_script():
     db = sql_connection()
     cursor = db.cursor()
     with open('test.sql', 'r', encoding='utf-8') as sql_file:
@@ -25,6 +25,8 @@ def main():
     try:
         cursor.executescript(sql_script)
         print('sql_script успешно загружен')
+        cursor.execute('SELECT name from sqlite_master where type= "table"')
+        print(f'Загруженные таблицы:\n{cursor.fetchall()}')
     except sqlite3.Error as err:
         print(f'Произошла ошибка при загрузке sql_script: {err}')
         db.close()
@@ -32,6 +34,10 @@ def main():
         return False
     db.commit()
     db.close()
+
+
+def main():
+    load_sql_script()
     while True:
         operation = input("""\nВведите название операции:
         import_from_excel
@@ -39,32 +45,38 @@ def main():
         parse_pdf_resume
         create_pdf_resume
         exit:\n""")
-        if operation == 'import_from_excel':
-            import_from_excel()
-        elif operation == 'export_to_excel':
-            export_to_excel()
-        elif operation == 'parse_pdf_resume':
-            parse_pdf_resume()
-        elif operation == 'create_pdf_resume':
-            create_pdf_resume()
-        elif operation == 'exit':
-            sys.exit()
+
+        operation_dict = {
+            'import_from_excel': import_from_excel,
+            'export_to_excel': export_to_excel,
+            'parse_pdf_resume': parse_pdf_resume,
+            'create_pdf_resume': create_pdf_resume,
+            'exit': sys.exit
+        }
+        if operation in operation_dict:
+            operation_dict[operation]()
         else:
             print('Такой команды нет')
 
 
 def import_from_excel():
+    db = sql_connection()
+    cursor = db.cursor()
     try:
-        db = sql_connection()
-        cursor = db.cursor()
         wb = pd.read_excel('data/users.xlsx', sheet_name='Лист1')
-        second_name = wb['second_name'].tolist()
-        first_name = wb['first_name'].tolist()
-        patronymic = wb['patronymic'].tolist()
-        region_id = wb['region_id'].tolist()
-        city_id = wb['city_id'].tolist()
-        phone = wb['phone'].tolist()
-        email = wb['email'].tolist()
+    except FileNotFoundError as err:
+        print(f'Ошибка при открытии файла users.xlsx, файл не найден: {err}')
+        db.close()
+        print("Соединение с SQLite закрыто")
+        return False
+    second_name = wb['second_name'].tolist()
+    first_name = wb['first_name'].tolist()
+    patronymic = wb['patronymic'].tolist()
+    region_id = wb['region_id'].tolist()
+    city_id = wb['city_id'].tolist()
+    phone = wb['phone'].tolist()
+    email = wb['email'].tolist()
+    try:
         for i in range(len(second_name)):
             sqlite_insert_user_query = """INSERT OR IGNORE INTO users
                                     (second_name, first_name, patronymic, region_id, city_id, phone, email)
@@ -78,15 +90,13 @@ def import_from_excel():
         print(f'Ошибка при импорте в БД: {e}')
     finally:
         cursor = db.cursor()
-        for row in cursor.execute('SELECT * FROM users;'):
-            print(row)
+        [print(row) for row in cursor.execute('SELECT * FROM users;')]
         db.close()
 
 
 def export_to_excel():
-    try:
-        db = sql_connection()
-        sqlite_select_query = """
+    db = sql_connection()
+    sqlite_select_query = """
                             SELECT
                                 users.id AS id,
                                 users.second_name AS second_name,
@@ -100,10 +110,17 @@ def export_to_excel():
                             JOIN cities ON cities.id = city_id
                             JOIN regions ON regions.id = cities.region_id;
                             """
+    try:
         df = pd.read_sql(sqlite_select_query, db)
         path = 'data/users_export.xlsx'
-        df.to_excel(path, index=False)
-        print(f'Данные экспортированы удачно, путь: {path}')
+        try:
+            df.to_excel(path, index=False)
+            print(f'Данные экспортированы удачно, путь: {path}')
+        except PermissionError as err:
+            print(f'Ошибка при открытии файла users.xlsx, нет доступа: {err}')
+            db.close()
+            print("Соединение с SQLite закрыто")
+            return False
     except sqlite3.Error as e:
         print(f'Ошибка при экспорте из БД: {e}')
     finally:
@@ -111,8 +128,16 @@ def export_to_excel():
 
 
 def parse_pdf_resume():
+    db = sql_connection()
+    cursor = db.cursor()
     pdf_document = 'data/resume.pdf'
-    doc = fitz.open(pdf_document)
+    try:
+        doc = fitz.open(pdf_document)
+    except fitz.fitz.FileNotFoundError as err:
+        print(f'Ошибка при открытии файла resume.pdf, файл не найден: {err}')
+        db.close()
+        print("Соединение с SQLite закрыто")
+        return False
     page1 = doc.loadPage(0)
     page1_text = page1.getText('text')
     list_content = page1_text.split('\n')[:8]
@@ -125,8 +150,6 @@ def parse_pdf_resume():
     else:
         region = 'Неизвестно'
     try:
-        db = sql_connection()
-        cursor = db.cursor()
         sqlite_insert_region_query = """INSERT OR IGNORE INTO regions
                                         (region_name)
                                         VALUES
@@ -165,10 +188,9 @@ def parse_pdf_resume():
 
 
 def create_pdf_resume():
-    try:
-        db = sql_connection()
-        cursor = db.cursor()
-        sqlite_select_query = """
+    db = sql_connection()
+    cursor = db.cursor()
+    sqlite_select_query = """
                             SELECT
                                 users.id AS id,
                                 users.second_name AS second_name,
@@ -182,6 +204,7 @@ def create_pdf_resume():
                             JOIN cities ON cities.id = city_id
                             JOIN regions ON regions.id = cities.region_id;
                             """
+    try:
         cursor.execute(sqlite_select_query)
         users = cursor.fetchall()
         pdfmetrics.registerFont(TTFont('FiraSans', 'fonts/FiraSans.ttf', 'UTF-8'))
