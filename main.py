@@ -9,6 +9,7 @@ from reportlab.pdfgen import canvas
 
 
 def sql_connection():
+    """Подключение к БД SQLite"""
     try:
         db = sqlite3.connect('db.sqlite3')
         return db
@@ -18,6 +19,7 @@ def sql_connection():
 
 
 def load_sql_script():
+    """Загрузка sql скрипта в БД SQLite"""
     db = sql_connection()
     cursor = db.cursor()
     with open('test.sql', 'r', encoding='utf-8') as sql_file:
@@ -60,6 +62,7 @@ def main():
 
 
 def import_from_excel():
+    """Импорт данных из .xslx в таблицу users БД SQLite"""
     db = sql_connection()
     cursor = db.cursor()
     try:
@@ -95,6 +98,7 @@ def import_from_excel():
 
 
 def export_to_excel():
+    """Экспорт данных из таблицы users в excel файл: users_export.xslx"""
     db = sql_connection()
     sqlite_select_query = """
                             SELECT
@@ -128,6 +132,7 @@ def export_to_excel():
 
 
 def parse_pdf_resume():
+    """Парсинг данных из резюме PDF в таблицу users БД SQLite"""
     db = sql_connection()
     cursor = db.cursor()
     pdf_document = 'data/resume.pdf'
@@ -188,6 +193,7 @@ def parse_pdf_resume():
 
 
 def create_pdf_resume():
+    """Создание/обновление PDF файла на каждой странице с таблицы users"""
     db = sql_connection()
     cursor = db.cursor()
     sqlite_select_query = """
